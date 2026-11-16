@@ -306,7 +306,7 @@ body{
 </div>
 <div class="ft" id="ft" style="display:none"><div class="in" id="ftin"></div></div>
 <div class="toast" id="toast"></div>
-<input type="file" id="filePick" accept=".json,.xlsx,.xlsm,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+<input type="file" id="filePick" style="display:none">
 
 <script>
 'use strict';
@@ -637,8 +637,9 @@ function homeEmpty(){
   titleEl.innerHTML='刷题仔<span class="sub">还没有题库</span>';
   body.innerHTML=
       '<div class="hero"><div class="t">刷题仔</div>'
-    + '<div class="d">导入一份题库 JSON，就能开始刷题</div></div>'
+    + '<div class="d">导入 Excel 题库，或之前导出的 JSON</div></div>'
     + '<button class="btn p" onclick="pickLib()">导入题库</button>'
+    + '<div style="text-align:center;font-size:12.5px;color:#94a3b8;margin:-2px 0 14px">支持 .xlsx / .xlsm / .json</div>'
     + '<button class="btn s" onclick="helpDoc()">支持什么格式？</button>'
     + '<button class="btn s" onclick="pickBackup()">导入备份</button>';
   ft.style.display='none';
@@ -692,6 +693,7 @@ function libMenu(){
   body.innerHTML=
       '<div class="libbox">'+rows+'</div>'
     + '<button class="btn p" onclick="pickLib()" style="margin-top:14px">导入新题库</button>'
+    + '<div style="text-align:center;font-size:12.5px;color:#94a3b8;margin:-2px 0 14px">支持 .xlsx / .xlsm / .json</div>'
     + '<button class="btn s" onclick="exportBackup()">导出当前库备份</button>'
     + '<button class="btn s" onclick="pickBackup()">导入备份</button>'
     + '<div class="storage-tip">存储：'+Store.modeName()
@@ -713,7 +715,9 @@ function pickBackup(){
   fileInput.click();
 }
 
-/* 两个入口共用一个输入框：按扩展名分发到 Excel 解析或 JSON 解析 */
+/* 两个入口共用一个输入框：按扩展名分发到 Excel 解析或 JSON 解析。
+   这里故意不设 accept 属性 —— 部分系统（尤其 iOS）会按 MIME 把 .xlsx 置灰，
+   导致明明支持却选不了。改为不限制选择，选完按扩展名判断并给出明确提示。 */
 fileInput.addEventListener('change', function(e){
   const f=e.target.files && e.target.files[0];
   e.target.value='';              // 允许连续选同一个文件
@@ -721,11 +725,11 @@ fileInput.addEventListener('change', function(e){
 
   const name=String(f.name||'').toLowerCase();
 
-  if(/\.xls$/.test(name) && !/\.xlsx$/.test(name)){
-    return toast('老式 .xls 不支持，请在 Excel 里另存为 .xlsx 再选');
-  }
   if(/\.(xlsx|xlsm)$/.test(name)) return importXlsx(f);
-  return importJson(f);
+  if(/\.json$/.test(name)) return importJson(f);
+  if(/\.xls$/.test(name)) return toast('老式 .xls 不支持，请在 Excel 里另存为 .xlsx 再选');
+  if(/\.csv$/.test(name)) return toast('CSV 暂不支持，请用 .xlsx 或 JSON');
+  return toast('不支持这个文件类型，请选 .xlsx 或 .json');
 });
 
 /* Excel 直接导入：浏览器里解 zip、读单元格、按同一套规则归一化 */
