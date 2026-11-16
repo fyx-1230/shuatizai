@@ -93,6 +93,14 @@ body[data-fs="xl"]{ --fs:19px; --fs-q:21px;  --fs-o:18px }
 .act.dis{opacity:.42;cursor:not-allowed}
 .hintline{font-size:12.5px;color:#94a3b8;text-align:center;padding:20px 12px;background:#fff;
   border:1px dashed #e2e8f0;border-radius:13px;margin-bottom:14px;line-height:1.7}
+.noteinput{width:100%;min-height:130px;border:1px solid #e2e8f0;border-radius:12px;padding:12px;
+  font-family:inherit;font-size:16px;line-height:1.6;color:#0f172a;background:#fff;resize:vertical}
+.noteinput:focus{outline:none;border-color:#2563eb}
+.backup-tip{display:flex;align-items:center;gap:8px;background:#fffbeb;border:1px solid #fde68a;
+  color:#92400e;border-radius:12px;padding:11px 13px;font-size:12.5px;margin-bottom:12px;cursor:pointer;line-height:1.5}
+.notebox{margin-top:12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-radius:0 10px 10px 0;
+  padding:10px 12px;font-size:13px;color:#475569;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.notebox b{display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:3px}
 .sec-t{font-size:13px;color:#64748b;margin:22px 2px 10px;font-weight:600;letter-spacing:.3px}
 /* 列宽必须写 minmax(0,1fr)：1fr 的最小尺寸是内容宽，
    分类名加了 nowrap 后会把整列顶宽、把右侧数字挤出屏幕 */
@@ -367,12 +375,98 @@ body[data-theme="green"] .sec-t,
 body[data-theme="green"] .pidx,
 body[data-theme="green"] .fbtn{color:#5f7358}
 
+/* 深色主题：只覆盖底色与文字，对错语义色提亮以维持对比度 */
+body[data-theme="dark"]{background:#0e1626;color:#e8eef9}
+body[data-theme="dark"] .hd,
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .cat,
+body[data-theme="dark"] .act,
+body[data-theme="dark"] .mini,
+body[data-theme="dark"] .libcard,
+body[data-theme="dark"] .libbox,
+body[data-theme="dark"] .librow,
+body[data-theme="dark"] .btn.s,
+body[data-theme="dark"] .dopt,
+body[data-theme="dark"] .pbtn,
+body[data-theme="dark"] .libbtn,
+body[data-theme="dark"] .searchbar input,
+body[data-theme="dark"] .sheet,
+body[data-theme="dark"] .opt,
+body[data-theme="dark"] .hintline,
+body[data-theme="dark"] .doc,
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .review,
+body[data-theme="dark"] .noteinput{background:#182234;border-color:#2a3750;color:#c9d5e8}
+
+body[data-theme="dark"] .ft{background:rgba(24,34,52,.96);border-color:#2a3750}
+body[data-theme="dark"] .back,
+body[data-theme="dark"] .sheet-hd button{background:#1f2b40;color:#c9d5e8}
+body[data-theme="dark"] .sheet-hd{border-bottom-color:#2a3750}
+body[data-theme="dark"] .sheet-hd span{color:#98a9c2}
+body[data-theme="dark"] .fbtn{background:#182234;border-color:#2a3750;color:#c9d5e8}
+body[data-theme="dark"] .fbtn:active{background:#1f2b40}
+body[data-theme="dark"] .fbtn.p{background:#2563eb;color:#fff;border-color:#2563eb}
+
+body[data-theme="dark"] .qtext,
+body[data-theme="dark"] .opt .v,
+body[data-theme="dark"] .act b,
+body[data-theme="dark"] .libname,
+body[data-theme="dark"] .mini .v,
+body[data-theme="dark"] h1,
+body[data-theme="dark"] .fb .ans b{color:#e8eef9}
+
+body[data-theme="dark"] .libmeta,
+body[data-theme="dark"] .act span,
+body[data-theme="dark"] .mini .l,
+body[data-theme="dark"] .hero .d,
+body[data-theme="dark"] .sec-t,
+body[data-theme="dark"] .pidx,
+body[data-theme="dark"] .empty,
+body[data-theme="dark"] .doc,
+body[data-theme="dark"] .fb .ans,
+body[data-theme="dark"] .storage-tip,
+body[data-theme="dark"] .nav{color:#98a9c2}
+body[data-theme="dark"] .searchbar input::placeholder,
+body[data-theme="dark"] .noteinput::placeholder{color:#6b7d96}
+
+body[data-theme="dark"] .opt .k{background:#1f2b40;color:#98a9c2}
+body[data-theme="dark"] .opt.sel{border-color:#5b9cf8;background:#1b2c47}
+body[data-theme="dark"] .opt.sel .k{background:#5b9cf8;color:#0e1626}
+
+body[data-theme="dark"] .pill{background:#1b2c47;color:#7db3fb}
+body[data-theme="dark"] .pill.g{background:#14301f;color:#4ade80}
+body[data-theme="dark"] .pill.o{background:#3a2a14;color:#fbbf24}
+body[data-theme="dark"] .fb.ok{background:#12301f;border-color:#1f4d33}
+body[data-theme="dark"] .fb.no{background:#3a1b1b;border-color:#5a2626}
+body[data-theme="dark"] .fb.ok .h{color:#4ade80}
+body[data-theme="dark"] .fb.no .h{color:#f87171}
+body[data-theme="dark"] .fb .hint{color:#4ade80}
+
+body[data-theme="dark"] .exambar span{background:#1f2b40;color:#98a9c2}
+body[data-theme="dark"] .exambar span.done{background:#1b2c47;color:#7db3fb}
+body[data-theme="dark"] .exambar span.ok{background:#14301f;color:#4ade80}
+body[data-theme="dark"] .exambar span.no{background:#3a1b1b;color:#f87171}
+body[data-theme="dark"] .exambar span.cur{outline-color:#5b9cf8}
+
+body[data-theme="dark"] .qbar{background:#1f2b40}
+body[data-theme="dark"] .libact{background:#1f2b40;border-color:#2a3750;color:#c9d5e8}
+body[data-theme="dark"] .memo{background:#2a2418;border-left-color:#f59e0b;color:#e8d9b8}
+body[data-theme="dark"] .memo .lb{color:#fbbf24}
+body[data-theme="dark"] .notebox{background:#131c2c;border-left-color:#3d4b66;color:#98a9c2}
+body[data-theme="dark"] .notebox b{color:#6b7d96}
+body[data-theme="dark"] .backup-tip{background:#3a2f14;border-color:#5a4a1e;color:#fbbf24}
+body[data-theme="dark"] .dpreview{background:#131c2c;border-color:#2a3750;color:#e8eef9}
+body[data-theme="dark"] .doc code{background:#1f2b40;color:#c9d5e8}
+body[data-theme="dark"] .libico{background:#1b2c47;color:#5b9cf8}
+body[data-theme="dark"] .libcard.blank .libico{background:#1f2b40;color:#6b7d96}
+body[data-theme="dark"] .toast{background:rgba(232,238,249,.94);color:#0e1626}
+body[data-theme="dark"] .exambar span::after{border-radius:10px}
+
 /* 显示设置面板 */
 .disp-row{display:flex;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #f1f5f9}
 .disp-row:last-child{border-bottom:0}
 .disp-row .dl{font-size:14px;font-weight:600;width:44px;flex:0 0 auto}
-.disp-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1}
-.disp-opts.fs4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.disp-opts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:1}
 .dopt{border:1px solid #e2e8f0;background:#fff;border-radius:10px;
   padding:9px 4px;font-size:13px;font-family:inherit;color:#475569;cursor:pointer;min-height:44px}
 .dopt.on{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}
@@ -432,7 +526,7 @@ body[data-theme="green"] .dpreview{background:#f4f8f1;border-color:#dde8d6}
    也不会因为写盘慢卡住界面。 */
 const DB_NAME='wenzai', DB_VER=1, DB_STORE='kv';
 const LS_PREFIX='wz:';
-const EMPTY_S=()=>({answers:{},wrong:[],fav:[],pos:0,queue:[],qidx:0,done:0,right:0});
+const EMPTY_S=()=>({answers:{},wrong:[],fav:[],notes:{},pos:0,queue:[],qidx:0,done:0,right:0});
 const EMPTY_EXSET=()=>({s:60,m:40,j:60,shuffle:false,showAns:true,timed:false,mins:60});
 
 let storeWarned=false;
@@ -641,9 +735,12 @@ function validateLib(o){
 /* ---------- 状态（由 boot 从存储载入，这里只给初值） ---------- */
 let S = EMPTY_S();
 let RIPOS = 0;
+/* 上次导出备份的时间戳。0 表示从没导出过 */
+let LAST_BACKUP = 0;
 
 /* ---------- 首页 ---------- */
 function home(){
+  VIEW='home';
   clearAuto();
   stopTick();
   setCardBtn('');
@@ -672,6 +769,20 @@ function home(){
     + '</div>'
     + (has ? '<button class="libact" onclick="libMenu()">切换</button>' : '')
     + '</div>';
+
+  /* iOS 会清理站点数据，练习记录没了就找不回来。
+     有作答记录、但超过 7 天没导出时给一条提醒（从没导出过也算）。 */
+  let backupTip = '';
+  if(has && answered > 0){
+    const days = LAST_BACKUP ? Math.floor((Date.now() - LAST_BACKUP) / 86400000) : -1;
+    if(days < 0){
+      backupTip = '<div class="backup-tip" onclick="exportBackup()">'
+        + '还没备份过。手机浏览器可能清理站点数据，导出一次更保险 →</div>';
+    }else if(days >= 7){
+      backupTip = '<div class="backup-tip" onclick="exportBackup()">'
+        + '已经 '+days+' 天没备份了，建议导出一份 →</div>';
+    }
+  }
 
   let mainAct;
   if(!has){
@@ -714,6 +825,7 @@ function home(){
   body.innerHTML = search
     + '<div id="hmain">'
     + libCard
+    + backupTip
     + mainAct
     + acts
     + statsRow
@@ -725,7 +837,7 @@ function needLib(){ toast('先导入一份题库'); }
 
 /* ---------- 显示设置：背景主题 + 字号 ---------- */
 let DISP = { theme:'default', fs:'m' };
-const THEMES = [{k:'default',n:'默认'},{k:'warm',n:'暖白'},{k:'green',n:'护眼绿'}];
+const THEMES = [{k:'default',n:'默认'},{k:'warm',n:'暖白'},{k:'green',n:'护眼绿'},{k:'dark',n:'深色'}];
 const FSS = [{k:'s',n:'小'},{k:'m',n:'中'},{k:'l',n:'大'},{k:'xl',n:'特大'}];
 
 /* 主题挂在 body 的 data 属性上，CSS 选择器负责换色；
@@ -1318,6 +1430,7 @@ async function loadLibData(id){
 
   // 存档健壮性：旧版本可能缺字段或类型不对
   if(!S.answers || typeof S.answers!=='object') S.answers={};
+  if(!S.notes || typeof S.notes!=='object') S.notes={};
   if(!Array.isArray(S.wrong)) S.wrong=[];
   if(!Array.isArray(S.fav)) S.fav=[];
   if(!Array.isArray(S.queue)) S.queue=[];
@@ -1464,11 +1577,17 @@ function exportBackup(){
   a.href=url; a.download=name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  LAST_BACKUP = Date.now();
+  put('lastBackup', LAST_BACKUP);
   toast('已导出 '+name);
 }
 
 function resetProgress(){
+  /* 笔记是学习成果，不属于「本组练习进度」，
+     重练/换一组时不能跟着一起清掉 */
+  const keepNotes = (S && S.notes) ? S.notes : {};
   S=EMPTY_S();
+  S.notes = keepNotes;
   LOG=[];
   save();
   saveLog();
@@ -1483,6 +1602,7 @@ function startRecite(){
   recite();
 }
 function recite(){
+  VIEW='recite';
   $('#dispBtn').style.display='none';
   const no=RQ[RI], q=byNo(no);
   if(!q){ home(); return; }
@@ -1660,6 +1780,7 @@ let autoTimer=null;
 function clearAuto(){ if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; } }
 
 function quiz(){
+  VIEW='quiz';
   $('#dispBtn').style.display='none';   // 答题页头部要留给答题卡
   const no=S.queue[S.qidx];
   const q=byNo(no);
@@ -1697,6 +1818,10 @@ function quiz(){
       + '</div>';
   }
 
+  const noteBox = S.notes[no]
+    ? '<div class="notebox" onclick="editNote()"><b>笔记</b>'+esc(S.notes[no])+'</div>'
+    : '';
+
   body.innerHTML=
     '<div class="card">'
     + '<div class="meta"><span class="pill '+TYP_CLS[q.t]+'">'+TYP[q.t]+'</span>'
@@ -1706,24 +1831,30 @@ function quiz(){
     + '<div class="qtext">'+esc(q.q)+'</div>'
     + optsHtml
     + fb
+    + noteBox
     + '</div>';
 
   ft.style.display='';
   const faved=S.fav.includes(no);
+  const noteBtn='<button class="fbtn" onclick="editNote()"'
+    + (S.notes[no] ? ' style="color:#2563eb"' : '') + '>✎</button>';
   let btns='';
   if(!answered){
     if(q.t===2){
       btns='<button class="fbtn" onclick="toggleFav()">'+(faved?'★':'☆')+'</button>'
+          + noteBtn
           + '<button class="fbtn" id="btnAllPick" onclick="pickAll()">'+(picked.length===q.o.length?'清空':'全选')+'</button>'
           + '<button class="fbtn p" onclick="submit()">确认答案</button>';
     }else{
       btns='<button class="fbtn" onclick="toggleFav()">'+(faved?'★':'☆')+'</button>'
+          + noteBtn
           + '<button class="fbtn" onclick="prev()" '+(S.qidx===0?'disabled':'')+'>上一题</button>'
           /* 未作答时的主操作是「点选项」，所以「跳过」不该抢主按钮样式 */
           + '<button class="fbtn" onclick="next()">跳过</button>';
     }
   }else{
     btns='<button class="fbtn" onclick="toggleFav()">'+(faved?'★':'☆')+'</button>'
+        + noteBtn
         + '<button class="fbtn" onclick="prev()" '+(S.qidx===0?'disabled':'')+'>上一题</button>'
         + '<button class="fbtn p" onclick="next()">'+(isLast?'完成':'下一题')+'</button>';
   }
@@ -1813,6 +1944,83 @@ function toggleFav(){
   if(i>=0){ S.fav.splice(i,1); toast('已取消收藏'); }
   else{ S.fav.push(no); toast('已收藏'); }
   save(); quiz();
+}
+
+/* ---------- 左右滑动切题 ----------
+   只有「快、短、横」的手势才触发：横向位移 >72px、纵向 <46px、600ms 内。
+   这样上下滚动看长题干、或者手指轻微偏移都不会误切题。 */
+let VIEW = 'home';
+let swX = 0, swY = 0, swT = 0;
+
+document.addEventListener('touchstart', function(e){
+  if(!e.touches || e.touches.length !== 1) return;
+  swX = e.touches[0].clientX;
+  swY = e.touches[0].clientY;
+  swT = Date.now();
+}, { passive:true });
+
+document.addEventListener('touchend', function(e){
+  if(!swX) return;
+  const x0 = swX;
+  swX = 0;
+  const t = e.changedTouches && e.changedTouches[0];
+  if(!t) return;
+
+  const dx = t.clientX - x0;
+  const dy = t.clientY - swY;
+  const dt = Date.now() - swT;
+  if(Math.abs(dx) < 72 || Math.abs(dy) > 46 || dt > 600) return;
+
+  // 弹层打开时不切题，否则会和答题卡/笔记的滚动手势打架
+  if(document.getElementById('cardSheet') || document.getElementById('noteSheet')) return;
+
+  if(VIEW === 'quiz'){
+    if(dx < 0) next(); else prev();
+  }else if(VIEW === 'recite'){
+    if(dx < 0) reciteNext(); else recitePrev();
+  }
+}, { passive:true });
+
+/* ---------- 题目笔记 ----------
+   用弹层而不是 prompt：手机上 prompt 的输入框太窄，长句子几乎没法编辑。 */
+function editNote(){
+  const no=S.queue[S.qidx];
+  if(!byNo(no)) return;
+  if(document.getElementById('noteSheet')) return;
+
+  const div=document.createElement('div');
+  div.id='noteSheet';
+  div.className='sheet';
+  div.innerHTML='<div class="sheet-hd"><b>笔记</b>'
+    + '<span>第 '+(S.qidx+1)+' 题</span>'
+    + '<button onclick="closeNote()">关闭</button></div>'
+    + '<div class="sheet-bd"><textarea id="noteTa" class="noteinput" '
+    + 'placeholder="记下易错点、记忆方法、和自己工作场景的对照…">'+esc(S.notes[no]||'')+'</textarea></div>'
+    + '<div class="card-pager">'
+    +   '<button class="pbtn" onclick="closeNote()">取消</button>'
+    +   '<button class="pbtn" style="background:#2563eb;color:#fff;border-color:#2563eb" onclick="saveNote()">保存</button>'
+    + '</div>';
+  document.body.appendChild(div);
+
+  const ta=document.getElementById('noteTa');
+  if(ta) setTimeout(function(){ ta.focus(); }, 130);
+}
+
+function saveNote(){
+  const no=S.queue[S.qidx];
+  const ta=document.getElementById('noteTa');
+  if(!ta) return;
+  const t=ta.value.trim();
+  if(t) S.notes[no]=t; else delete S.notes[no];
+  save();
+  closeNote();
+  quiz();
+  toast(t ? '笔记已保存' : '笔记已清除');
+}
+
+function closeNote(){
+  const el=document.getElementById('noteSheet');
+  if(el) el.remove();
 }
 
 /* ---------- 列表视图 ---------- */
@@ -2053,6 +2261,7 @@ function updateClock(){
 }
 
 function exam(){
+  VIEW='exam';
   clearAuto();
   $('#dispBtn').style.display='none';
   if(!EX || !EX.items || !EX.items.length){ return examBroken(); }
@@ -2368,6 +2577,7 @@ async function boot(){
     DISP={ theme:dp.theme||'default', fs:dp.fs||'m' };
   }
   applyDisp();
+  LAST_BACKUP = Number(await Store.get('lastBackup')) || 0;
 
   if(META.currentId && META.libs.some(function(l){ return l.id===META.currentId; })){
     await loadLibData(META.currentId);
