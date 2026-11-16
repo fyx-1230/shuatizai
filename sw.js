@@ -11,7 +11,7 @@
  *
  * 改版时把 VERSION 加一，activate 阶段会自动清掉旧缓存。
  */
-const VERSION = 'v1.1.1';
+const VERSION = 'v1.2.0';
 const CACHE = 'wenzai-' + VERSION;
 const ASSETS = [
   './',
