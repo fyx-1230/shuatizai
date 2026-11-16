@@ -58,7 +58,33 @@ body{
 .btn.p:active{background:#1d4ed8}
 .btn.s{background:#fff;color:#334155;border:1px solid #e2e8f0}
 .btn.s:active{background:#f8fafc}
-.btn .tag{font-weight:400;font-size:12px;color:#93c5fd;margin-left:8px}
+.btn .tag{font-weight:400;font-size:12px;color:#94a3b8;margin-left:8px}
+.btn.p .tag{color:rgba(255,255,255,.8)}
+.btn.big{padding:17px 15px;font-size:17px;margin-bottom:14px}
+
+/* 首页题库卡 */
+.libcard{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;
+  border-radius:14px;padding:13px 14px;margin-bottom:14px}
+.libcard.blank{border-style:dashed;background:#fbfcfe}
+.libico{width:38px;height:38px;border-radius:11px;background:#eff6ff;color:#2563eb;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.libcard.blank .libico{background:#f1f5f9;color:#94a3b8}
+.libbody{flex:1;min-width:0}
+.libname{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.libmeta{font-size:11.5px;color:#94a3b8;margin-top:3px}
+.libact{border:1px solid #e2e8f0;background:#fff;color:#475569;border-radius:9px;
+  padding:9px 13px;font-size:12.5px;font-family:inherit;cursor:pointer;min-height:40px;flex:0 0 auto}
+.libact:active{background:#f8fafc}
+
+/* 首页功能网格 */
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.act{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:13px 14px;cursor:pointer}
+.act:active{background:#f8fafc}
+.act b{display:block;font-size:14px;font-weight:600;color:#0f172a}
+.act span{display:block;font-size:11.5px;color:#94a3b8;margin-top:3px}
+.act.dis{opacity:.42;cursor:not-allowed}
+.hintline{font-size:12.5px;color:#94a3b8;text-align:center;padding:20px 12px;background:#fff;
+  border:1px dashed #e2e8f0;border-radius:13px;margin-bottom:14px;line-height:1.7}
 .sec-t{font-size:13px;color:#64748b;margin:22px 2px 10px;font-weight:600;letter-spacing:.3px}
 /* 列宽必须写 minmax(0,1fr)：1fr 的最小尺寸是内容宽，
    分类名加了 nowrap 后会把整列顶宽、把右侧数字挤出屏幕 */
@@ -78,6 +104,7 @@ body{
 .mini:active{background:#f8fafc}
 .mini .v{font-size:22px;font-weight:700;color:#2563eb}
 .mini .l{font-size:12px;color:#64748b;margin-top:2px}
+.row.muted .mini .v{color:#cbd5e1}
 
 /* 题库列表 */
 .libbox{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0}
@@ -291,6 +318,7 @@ body{
   .wrap{max-width:760px}
   .ft .in{max-width:760px}
   .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .acts{grid-template-columns:repeat(4,minmax(0,1fr))}
   .body{padding:18px 20px 130px}
 }
 </style>
@@ -541,54 +569,87 @@ function home(){
   setCardBtn('');
   backEl.style.display='none'; ft.style.display='none';
 
-  if(!hasLib()){ return homeEmpty(); }
+  const has = hasLib();
+  const total = has ? LIB.questions.length : 0;
+  const cats = has ? LIB.cats : [];
+  const answered = has ? Object.keys(S.answers).length : 0;
+  const acc = pct(S.right, S.done);
+  const canResume = has && S.queue && S.queue.length && S.qidx>0 && S.qidx<S.queue.length;
 
-  const total=LIB.questions.length;
-  const answered=Object.keys(S.answers).length;
-  const acc=pct(S.right, S.done);
-  titleEl.innerHTML='刷题仔<span class="sub">'+total+' 题</span>';
+  titleEl.innerHTML = '刷题仔<span class="sub">'+(has ? total+' 题' : '未导入题库')+'</span>';
 
-  const canResume = S.queue && S.queue.length && S.qidx>0 && S.qidx<S.queue.length;
+  const icoBook = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+  const icoPlus = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 
-  let cont='';
-  if(canResume){
-    cont='<button class="btn p" onclick="resume()">继续练习<span class="tag">第 '+(S.qidx+1)+' / '+S.queue.length+' 题</span></button>'
-       + '<button class="btn s" onclick="startAll()">从头开始<span class="tag">清空本组作答记录</span></button>';
+  const libCard = '<div class="libcard'+(has?'':' blank')+'">'
+    + '<div class="libico">'+(has?icoBook:icoPlus)+'</div>'
+    + '<div class="libbody">'
+    +   '<div class="libname">'+esc(has ? LIB.name : '还没有题库')+'</div>'
+    +   '<div class="libmeta">'+(has
+          ? total+' 题 · '+cats.length+' 个分类 · 已答 '+answered+' 题'
+          : '支持 .xlsx / .xlsm / .json')+'</div>'
+    + '</div>'
+    + (has ? '<button class="libact" onclick="libMenu()">切换</button>' : '')
+    + '</div>';
+
+  let mainAct;
+  if(!has){
+    mainAct = '<button class="btn p big" onclick="pickLib()">导入题库<span class="tag">选 Excel 或 JSON</span></button>';
+  }else if(canResume){
+    mainAct = '<button class="btn p big" onclick="resume()">继续练习<span class="tag">第 '+(S.qidx+1)+' / '+S.queue.length+' 题</span></button>';
   }else{
-    cont='<button class="btn p" onclick="startAll()">开始练习<span class="tag">顺序 '+total+' 题</span></button>';
+    mainAct = '<button class="btn p big" onclick="startAll()">开始练习<span class="tag">顺序 '+total+' 题</span></button>';
   }
 
-  const catsHtml = LIB.cats.map((c,i)=>
-    '<div class="cat" onclick="startCatIdx('+i+')"><span class="n">'+esc(c.n)+'</span><span class="c">'+c.c+'</span></div>'
-  ).join('');
+  const dis = has ? '' : ' dis';
+  const on = function(fn){ return has ? ' onclick="'+fn+'"' : ' onclick="needLib()"'; };
+  const logOn = !has ? ' onclick="needLib()"'
+    : (LOG.length ? ' onclick="go(\'exlog\')"' : ' onclick="toast(\'还没有考试记录\')"');
 
-  body.innerHTML=
-      '<div class="searchbar"><input id="kw" type="search" placeholder="搜索题干关键词或题号"'
-    + ' autocomplete="off" oninput="onSearchInput(this.value)"></div>'
-    + '<div id="sres"></div>'
+  const acts = '<div class="acts">'
+    + '<div class="act'+dis+'"'+on('startRandom()')+'><b>随机练习</b><span>打乱顺序</span></div>'
+    + '<div class="act'+dis+'"'+on('startRecite()')+'><b>'+(RIPOS>0?'继续背题':'背题模式')+'</b><span>'+(RIPOS>0?'上次到第 '+(RIPOS+1)+' 题':'看答案与解析')+'</span></div>'
+    + '<div class="act'+dis+'"'+on('examSetup()')+'><b>模拟考试</b><span>自选题量</span></div>'
+    + '<div class="act'+(has&&LOG.length?'':' dis')+'"'+logOn+'><b>考试记录</b><span>'+(LOG.length?LOG.length+' 次':'暂无')+'</span></div>'
+    + '</div>';
+
+  const statsRow = '<div class="row'+(has?'':' muted')+'">'
+    + '<div class="mini" onclick="'+(has?'go(\'wrong\')':'needLib()')+'"><div class="v">'+S.wrong.length+'</div><div class="l">错题本</div></div>'
+    + '<div class="mini" onclick="'+(has?'go(\'fav\')':'needLib()')+'"><div class="v">'+S.fav.length+'</div><div class="l">收藏</div></div>'
+    + '<div class="mini" onclick="'+(has?'go(\'stats\')':'needLib()')+'"><div class="v">'+acc+'%</div><div class="l">正确率</div></div>'
+    + '</div>';
+
+  const catBlock = (has && cats.length)
+    ? '<div class="sec-t">按分类练习</div><div class="grid">'
+      + cats.map(function(c,i){
+          return '<div class="cat" onclick="startCatIdx('+i+')"><span class="n">'+esc(c.n)+'</span><span class="c">'+c.c+'</span></div>';
+        }).join('')
+      + '</div>'
+    : (has ? '' : '<div class="hintline">导入题库后，这里会按分类列出来，点一下只练那一类</div>');
+
+  const foot = has
+    ? '<div class="sec-t">题库</div><div class="cat" onclick="libMenu()">'
+      + '<span class="n">管理题库</span><span class="c">'+META.libs.length+' 个</span></div>'
+    : '<div class="cat" onclick="helpDoc()">'
+      + '<span class="n">表格该怎么写？</span><span class="c">看格式说明 ›</span></div>';
+
+  const search = has
+    ? '<div class="searchbar"><input id="kw" type="search" placeholder="搜索题干关键词或题号"'
+      + ' autocomplete="off" oninput="onSearchInput(this.value)"></div><div id="sres"></div>'
+    : '';
+
+  body.innerHTML = search
     + '<div id="hmain">'
-    + '<div class="hero"><div class="t">'+esc(LIB.name)+'</div>'
-    + '<div class="d">'+total+' 题 · '+LIB.cats.length+' 个分类 · 已答 '+answered+' 题</div></div>'
-    + cont
-    + '<button class="btn s" onclick="startRandom()">随机练习<span class="tag">打乱顺序</span></button>'
-    + '<button class="btn s" onclick="startRecite()">'+(RIPOS>0?'继续背题':'背题模式')
-    + '<span class="tag">'+(RIPOS>0?'上次背到第 '+(RIPOS+1)+' 题':'直接看答案与解析')+'</span></button>'
-    + (EX && EX.items && EX.items.length && !EX.result
-        ? '<button class="btn s" onclick="exam()" style="border-color:#f59e0b;color:#b45309">继续考试<span class="tag" style="color:#f59e0b">已答 '+Object.keys(EX.ua||{}).length+' / '+EX.items.length+'</span></button>'
-        : '')
-    + '<button class="btn s" onclick="examSetup()" style="border-color:#f59e0b;color:#b45309">模拟考试<span class="tag" style="color:#f59e0b">自选题量 · 选项乱序</span></button>'
-    + (LOG.length ? '<button class="btn s" onclick="go(\'exlog\')">考试记录<span class="tag">'+LOG.length+' 次</span></button>' : '')
-    + '<div class="row" style="margin-top:16px">'
-    +   '<div class="mini" onclick="go(\'wrong\')"><div class="v">'+S.wrong.length+'</div><div class="l">错题本</div></div>'
-    +   '<div class="mini" onclick="go(\'fav\')"><div class="v">'+S.fav.length+'</div><div class="l">收藏</div></div>'
-    +   '<div class="mini" onclick="go(\'stats\')"><div class="v">'+acc+'%</div><div class="l">正确率</div></div>'
-    + '</div>'
-    + (LIB.cats.length ? '<div class="sec-t">按分类练习</div><div class="grid">'+catsHtml+'</div>' : '')
-    + '<div class="sec-t">题库</div>'
-    + '<div class="cat" onclick="libMenu()" style="margin-bottom:9px">'
-    +   '<span class="n">管理题库</span><span class="c">'+META.libs.length+' 个 · '+esc(LIB.name)+'</span></div>'
+    + libCard
+    + mainAct
+    + acts
+    + statsRow
+    + catBlock
+    + foot
     + '</div>';
 }
+
+function needLib(){ toast('先导入一份题库'); }
 
 /* ---------- 首页搜索 ----------
    只更新 #sres 并隐藏 #hmain，不重绘整个 body，
@@ -633,17 +694,8 @@ function openOne(no){
 }
 
 /* 还没有题库时的首页 */
-function homeEmpty(){
-  titleEl.innerHTML='刷题仔<span class="sub">还没有题库</span>';
-  body.innerHTML=
-      '<div class="hero"><div class="t">刷题仔</div>'
-    + '<div class="d">导入 Excel 题库，或之前导出的 JSON</div></div>'
-    + '<button class="btn p" onclick="pickLib()">导入题库</button>'
-    + '<div style="text-align:center;font-size:12.5px;color:#94a3b8;margin:-2px 0 14px">支持 .xlsx / .xlsm / .json</div>'
-    + '<button class="btn s" onclick="helpDoc()">支持什么格式？</button>'
-    + '<button class="btn s" onclick="pickBackup()">导入备份</button>';
-  ft.style.display='none';
-}
+/* 没有题库时不再单独做一页 —— home() 内部按 hasLib() 切换禁用态，
+   保证「空态」和「有题库」是同一个界面，用户不会觉得是两个应用。 */
 
 function helpDoc(){
   titleEl.innerHTML='怎么导入题库<span class="sub">两种方式</span>';
@@ -1311,7 +1363,7 @@ function resetProgress(){
 /* ---------- 背题模式 ---------- */
 let RQ=[], RI=0;
 function startRecite(){
-  if(!hasLib()){ return homeEmpty(); }
+  if(!hasLib()){ return home(); }
   RQ=LIB.questions.map(q=>q.n);
   RI=Math.min(Math.max(0,RIPOS), RQ.length-1);
   recite();
@@ -1461,20 +1513,20 @@ function clearAnswersFor(ids){
   ids.forEach(n=>{ delete S.answers[n]; });
 }
 function startAll(){
-  if(!hasLib()){ return homeEmpty(); }
+  if(!hasLib()){ return home(); }
   const ids=LIB.questions.map(q=>q.n);
   clearAnswersFor(ids);
   S.queue=ids; S.qidx=0; save(); quiz();
 }
 function startRandom(){
-  if(!hasLib()){ return homeEmpty(); }
+  if(!hasLib()){ return home(); }
   const a=LIB.questions.map(q=>q.n);
   shuffleArr(a);
   clearAnswersFor(a);
   S.queue=a; S.qidx=0; save(); quiz();
 }
 function startCat(cat){
-  if(!hasLib()){ return homeEmpty(); }
+  if(!hasLib()){ return home(); }
   const list=LIB.questions.filter(q=>q.c===cat).map(q=>q.n);
   if(!list.length){ toast('该分类暂无题目'); return; }
   clearAnswersFor(list);
@@ -1696,7 +1748,7 @@ function redoLog(i){
 
 /* ---------- 统计 ---------- */
 function stats(){
-  if(!hasLib()){ return homeEmpty(); }
+  if(!hasLib()){ return home(); }
   const total=LIB.questions.length, answered=Object.keys(S.answers).length;
   const acc=pct(S.right,S.done);
   titleEl.innerHTML='统计<span class="sub">本地记录</span>';
@@ -1742,7 +1794,7 @@ function shuffleArr(a){
 }
 
 function examSetup(){
-  if(!hasLib()){ return homeEmpty(); }
+  if(!hasLib()){ return home(); }
   clearAuto();
   titleEl.innerHTML='模拟考试<span class="sub">设置题量</span>';
   backEl.style.display=''; backEl.onclick=home; ft.style.display='';
