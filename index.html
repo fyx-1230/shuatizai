@@ -619,14 +619,6 @@ function home(){
     + '<div class="mini" onclick="'+(has?'go(\'stats\')':'needLib()')+'"><div class="v">'+acc+'%</div><div class="l">正确率</div></div>'
     + '</div>';
 
-  const catBlock = (has && cats.length)
-    ? '<div class="sec-t">按分类练习</div><div class="grid">'
-      + cats.map(function(c,i){
-          return '<div class="cat" onclick="startCatIdx('+i+')"><span class="n">'+esc(c.n)+'</span><span class="c">'+c.c+'</span></div>';
-        }).join('')
-      + '</div>'
-    : (has ? '' : '<div class="hintline">导入题库后，这里会按分类列出来，点一下只练那一类</div>');
-
   const foot = has
     ? '<div class="sec-t">题库</div><div class="cat" onclick="libMenu()">'
       + '<span class="n">管理题库</span><span class="c">'+META.libs.length+' 个</span></div>'
@@ -644,7 +636,6 @@ function home(){
     + mainAct
     + acts
     + statsRow
-    + catBlock
     + foot
     + '</div>';
 }
