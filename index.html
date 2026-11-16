@@ -306,7 +306,7 @@ body{
 </div>
 <div class="ft" id="ft" style="display:none"><div class="in" id="ftin"></div></div>
 <div class="toast" id="toast"></div>
-<input type="file" id="filePick" accept=".json,application/json" style="display:none">
+<input type="file" id="filePick" accept=".json,.xlsx,.xlsm,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
 
 <script>
 'use strict';
@@ -639,26 +639,30 @@ function homeEmpty(){
       '<div class="hero"><div class="t">刷题仔</div>'
     + '<div class="d">导入一份题库 JSON，就能开始刷题</div></div>'
     + '<button class="btn p" onclick="pickLib()">导入题库</button>'
-    + '<button class="btn s" onclick="helpDoc()">怎么生成 JSON？</button>'
+    + '<button class="btn s" onclick="helpDoc()">支持什么格式？</button>'
     + '<button class="btn s" onclick="pickBackup()">导入备份</button>';
   ft.style.display='none';
 }
 
 function helpDoc(){
-  titleEl.innerHTML='怎么生成题库<span class="sub">三步</span>';
+  titleEl.innerHTML='怎么导入题库<span class="sub">两种方式</span>';
   backEl.style.display=''; backEl.onclick=home; ft.style.display='none';
   body.innerHTML='<div class="doc">'
-    + '<h3>1. 准备 Excel</h3>'
-    + '一行一题。表头像这样（顺序不限，脚本会自动认列）：'
-    + '<pre>序号 | 题目 | 题型 | 选项A | 选项B | 选项C | 选项D | 正确答案 | 解析 | 分类</pre>'
-    + '<h3>2. 电脑上转成 JSON</h3>'
-    + '<code>python tools/xlsx2json.py 题库.xlsx -o 题库.json</code>'
-    + '<div style="margin-top:8px;color:#64748b;font-size:13px">'
-    + '脚本会顺手校验：答案越界、空选项、题号重复，有问题会列出来。</div>'
-    + '<h3>3. 回到这里导入</h3>'
-    + '点「导入题库」，选中刚生成的 .json 文件。'
-    + '<h3>题型编号</h3>'
-    + '1 = 单选　2 = 多选　3 = 判断（也可以直接写「单选/多选/判断」，脚本会自动换）'
+    + '<h3>方式一：直接选 Excel（推荐）</h3>'
+    + '点「导入题库」，选一个 <code>.xlsx</code> 文件就行，手机上也能直接用，不需要电脑。'
+    + '<h3>方式二：先转成 JSON</h3>'
+    + '电脑上跑 <code>py tools/xlsx2json.py 题库.xlsx</code>，生成 <code>.json</code> 后再导入。'
+    + '<div style="color:#64748b;font-size:13px;margin-top:8px">'
+    + '适合要存档、或在多台设备间传同一份题库的情况。</div>'
+    + '<h3>Excel 该长什么样</h3>'
+    + '一行一题，表头顺序不限，会自动认列：'
+    + '<pre>题目 | 题型 | 选项A | 选项B | 选项C | 选项D | 正确答案 | 解析 | 分类</pre>'
+    + '<h3>题型与答案怎么写</h3>'
+    + '题型写 <code>单选</code> / <code>多选</code> / <code>判断</code>，或直接写 1 / 2 / 3。<br>'
+    + '答案是字母：单选写 <code>B</code>，多选写 <code>ABD</code> 或 <code>A,B</code> 都认。<br>'
+    + '判断题选项写「正确 / 错误」或「对 / 错」都行。'
+    + '<h3>会被跳过的行</h3>'
+    + '选项和答案都是图片的题（常见于图表题、公式题）导不进来，会跳过并在导入后告诉你跳了几行。'
     + '</div>';
 }
 
@@ -709,10 +713,43 @@ function pickBackup(){
   fileInput.click();
 }
 
+/* 两个入口共用一个输入框：按扩展名分发到 Excel 解析或 JSON 解析 */
 fileInput.addEventListener('change', function(e){
   const f=e.target.files && e.target.files[0];
   e.target.value='';              // 允许连续选同一个文件
   if(!f) return;
+
+  const name=String(f.name||'').toLowerCase();
+
+  if(/\.xls$/.test(name) && !/\.xlsx$/.test(name)){
+    return toast('老式 .xls 不支持，请在 Excel 里另存为 .xlsx 再选');
+  }
+  if(/\.(xlsx|xlsm)$/.test(name)) return importXlsx(f);
+  return importJson(f);
+});
+
+/* Excel 直接导入：浏览器里解 zip、读单元格、按同一套规则归一化 */
+function importXlsx(f){
+  if(importMode==='backup'){ return toast('备份文件只能是 JSON'); }
+  toast('正在解析 Excel…');
+
+  const reader=new FileReader();
+  reader.onload=function(){
+    xlsxToRows(reader.result).then(function(rows){
+      const res=rowsToLib(rows, f.name);
+      const suffix = res.errors.length
+        ? '，跳过 '+res.errors.length+' 行（'+res.errors[0].replace(/^第 \d+ 行：/,'')+'）'
+        : '';
+      return applyLib(res.lib, { suffix:suffix });
+    }).catch(function(err){
+      toast('Excel 解析失败：'+(err && err.message ? err.message : '未知错误'));
+    });
+  };
+  reader.onerror=function(){ toast('文件读取失败'); };
+  reader.readAsArrayBuffer(f);
+}
+
+function importJson(f){
   const r=new FileReader();
   r.onload=function(){
     let text=String(r.result||'');
@@ -732,7 +769,352 @@ fileInput.addEventListener('change', function(e){
   };
   r.onerror=function(){ toast('文件读取失败'); };
   r.readAsText(f,'utf-8');
-});
+}
+
+/* ==========================================================
+   浏览器端 xlsx 解析
+   xlsx 本质是 zip + xml。这里解压 xl/worksheets/*.xml 与 sharedStrings.xml，
+   再用正则取单元格（不用 DOMParser —— 正则版能在 Node 里跑，可以直接单测）。
+   解压依赖浏览器原生 DecompressionStream（Chrome 103+ / Safari 16.4+）。
+   ========================================================== */
+
+/* 从文件尾往前找 EOCD，拿中央目录 */
+function zipEntries(buf){
+  const u8 = new Uint8Array(buf);
+  const dv = new DataView(buf);
+  let eocd = -1;
+  const floor = Math.max(0, u8.length - 65558);
+  for(let i = u8.length - 22; i >= floor; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error('不是有效的 xlsx（找不到 zip 目录）');
+
+  const count = dv.getUint16(eocd + 10, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  const out = {};
+  let p = cdOffset;
+  for(let i = 0; i < count; i++){
+    if(dv.getUint32(p, true) !== 0x02014b50) throw new Error('xlsx 内部结构损坏');
+    const method = dv.getUint16(p + 10, true);
+    const compSize = dv.getUint32(p + 20, true);
+    const nameLen = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const commentLen = dv.getUint16(p + 32, true);
+    const localOffset = dv.getUint32(p + 42, true);
+    const name = new TextDecoder('utf-8').decode(u8.subarray(p + 46, p + 46 + nameLen));
+    out[name] = { method:method, compSize:compSize, localOffset:localOffset };
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return out;
+}
+
+/* 解压单个条目。method 0 = 未压缩，8 = deflate */
+async function unzipEntry(buf, entry){
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
+  const p = entry.localOffset;
+  if(dv.getUint32(p, true) !== 0x04034b50) throw new Error('xlsx 内部结构损坏');
+  const nameLen = dv.getUint16(p + 26, true);
+  const extraLen = dv.getUint16(p + 28, true);
+  const start = p + 30 + nameLen + extraLen;
+  const comp = u8.subarray(start, start + entry.compSize);
+
+  if(entry.method === 0) return new TextDecoder('utf-8').decode(comp);
+  if(typeof DecompressionStream === 'undefined'){
+    throw new Error('当前浏览器不支持解压 xlsx，请改用电脑生成 JSON 后再导入');
+  }
+  const stream = new Blob([comp]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  const ab = await new Response(stream).arrayBuffer();
+  return new TextDecoder('utf-8').decode(new Uint8Array(ab));
+}
+
+function xmlUnescape(s){
+  return String(s)
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+    .replace(/&#(\d+);/g, function(_,d){ return String.fromCharCode(+d); })
+    .replace(/&amp;/g,'&');
+}
+
+function parseSharedStrings(xml){
+  const out = [];
+  const siRe = /<si>([\s\S]*?)<\/si>/g;
+  let m;
+  while((m = siRe.exec(xml))){
+    let text = '';
+    const tRe = /<t[^>]*>([\s\S]*?)<\/t>/g;
+    let tm;
+    while((tm = tRe.exec(m[1]))) text += xmlUnescape(tm[1]);
+    out.push(text);
+  }
+  return out;
+}
+
+function cellRefToRC(ref){
+  const m = /^([A-Z]+)(\d+)$/.exec(ref);
+  if(!m) return null;
+  let col = 0;
+  for(let i = 0; i < m[1].length; i++) col = col * 26 + (m[1].charCodeAt(i) - 64);
+  return { r: parseInt(m[2],10), c: col };
+}
+
+function parseSheetXml(xml, shared){
+  const rows = [];
+  const rowRe = /<row[^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g;
+  let rm;
+  while((rm = rowRe.exec(xml))){
+    const rowNum = parseInt(rm[1], 10);
+    const cells = [];
+    const cellRe = /<c\s+([^>]*?)(\/>|>([\s\S]*?)<\/c>)/g;
+    let cm;
+    while((cm = cellRe.exec(rm[2]))){
+      const attrs = cm[1], inner = cm[3] || '';
+      const refM = /r="([A-Z]+\d+)"/.exec(attrs);
+      const tM = /t="([^"]+)"/.exec(attrs);
+      const type = tM ? tM[1] : 'n';
+      let val = '';
+      if(type === 'inlineStr'){
+        const isM = /<is>([\s\S]*?)<\/is>/.exec(inner);
+        if(isM){
+          const tM2 = /<t[^>]*>([\s\S]*?)<\/t>/.exec(isM[1]);
+          val = tM2 ? xmlUnescape(tM2[1]) : '';
+        }
+      }else{
+        const vM = /<v[^>]*>([\s\S]*?)<\/v>/.exec(inner);
+        if(vM){
+          const raw = vM[1];
+          val = (type === 's') ? (shared[+raw] !== undefined ? shared[+raw] : '') : xmlUnescape(raw);
+        }
+      }
+      if(refM){
+        const pos = cellRefToRC(refM[1]);
+        if(pos) cells[pos.c - 1] = val;
+      }
+    }
+    rows[rowNum - 1] = cells;
+  }
+  for(let i = 0; i < rows.length; i++) if(!rows[i]) rows[i] = [];
+  return rows;
+}
+
+/* 找主表：优先 workbook.xml 里第一个 sheet 指向的文件，找不到就退回 sheet1.xml */
+async function xlsxFirstSheet(entries, buf){
+  let target = 'xl/worksheets/sheet1.xml';
+  try{
+    if(entries['xl/workbook.xml'] && entries['xl/_rels/workbook.xml.rels']){
+      const wb = await unzipEntry(buf, entries['xl/workbook.xml']);
+      const rels = await unzipEntry(buf, entries['xl/_rels/workbook.xml.rels']);
+      const sheetM = /<sheet[^>]*r:id="([^"]+)"[^>]*\/?>/.exec(wb);
+      if(sheetM){
+        const relRe = new RegExp('<Relationship[^>]*Id="' + sheetM[1] + '"[^>]*Target="([^"]+)"');
+        const relM = relRe.exec(rels);
+        if(relM){
+          let t = relM[1];
+          target = t.charAt(0) === '/' ? t.slice(1) : ('xl/' + t.replace(/^\.\//,''));
+        }
+      }
+    }
+  }catch(e){ /* 退回默认路径 */ }
+  if(!entries[target]){
+    const alt = Object.keys(entries).filter(function(k){ return /^xl\/worksheets\/sheet\d+\.xml$/.test(k); })[0];
+    if(alt) target = alt;
+  }
+  return target;
+}
+
+/* 读整个 xlsx → 二维数组（第一行通常是表头） */
+async function xlsxToRows(arrayBuffer){
+  const entries = zipEntries(arrayBuffer);
+  const sheetPath = await xlsxFirstSheet(entries, arrayBuffer);
+  if(!entries[sheetPath]) throw new Error('xlsx 里没有找到工作表');
+
+  let shared = [];
+  if(entries['xl/sharedStrings.xml']){
+    shared = parseSharedStrings(await unzipEntry(arrayBuffer, entries['xl/sharedStrings.xml']));
+  }
+  const sheetXml = await unzipEntry(arrayBuffer, entries[sheetPath]);
+  return parseSheetXml(sheetXml, shared);
+}
+
+/* ---------- 表头映射与归一化（与 tools/xlsx2json.py 同一套规则） ---------- */
+function cleanHeader(s){
+  return String(s == null ? '' : s)
+    .replace(/[（(][^）)]*[）)]/g, '')     // 去掉（必填）这类括注
+    .replace(/[\s\u3000]+/g, '');          // 去掉所有空格
+}
+function headerKey(s){ return cleanHeader(s).toLowerCase(); }
+
+const XL_ALIASES = {
+  n: ['序号','编号','题号','id','no','index'],
+  q: ['题目','题干','试题','问题','question','stem'],
+  t: ['题型','类型','题类','type'],
+  a: ['正确答案','标准答案','答案','answer','key','ans'],
+  m: ['解析','答疑','答案解析','解释','analysis','explain'],
+  c: ['分类','章节','类别','知识点','标签','category','chapter']
+};
+
+/* 识别表头，返回 {cols:{字段:列下标}, optIdx:[列下标...]} */
+function mapXlColumns(header){
+  const cols = {}, used = {};
+  const optIdx = [];
+  header.forEach(function(raw, i){
+    const cell = cleanHeader(raw);
+    if(!cell) return;
+    const m = /^(?:选项|option)?([A-Ha-h]|[1-8])$/i.exec(cell);
+    if(m){
+      let tok = m[1].toUpperCase();
+      if(/^\d$/.test(tok)) tok = String.fromCharCode(64 + parseInt(tok,10));
+      optIdx.push({ letter:tok, idx:i });
+      used[i] = true;
+    }
+  });
+  optIdx.sort(function(x,y){ return x.letter < y.letter ? -1 : 1; });
+
+  Object.keys(XL_ALIASES).forEach(function(field){
+    if(cols[field] !== undefined) return;
+    const names = XL_ALIASES[field].map(function(x){ return x.toLowerCase(); });
+    for(let i = 0; i < header.length; i++){
+      if(used[i]) continue;
+      const k = headerKey(header[i]);
+      if(names.indexOf(k) >= 0){ cols[field] = i; used[i] = true; return; }
+    }
+    for(let i = 0; i < header.length; i++){
+      if(used[i]) continue;
+      const k = headerKey(header[i]);
+      if(names.some(function(nm){ return nm.length >= 2 && k.indexOf(nm) >= 0; })){
+        cols[field] = i; used[i] = true; return;
+      }
+    }
+  });
+
+  return { cols:cols, optIdx:optIdx.map(function(o){ return o.idx; }) };
+}
+
+function xlNormType(v){
+  const k = String(v == null ? '' : v).replace(/\s/g,'');
+  if(!k) return null;
+  if(k === '1' || k.indexOf('单选') >= 0 || /^single/i.test(k)) return 1;
+  if(k === '2' || k.indexOf('多选') >= 0 || k.indexOf('不定项') >= 0 || /^multi/i.test(k)) return 2;
+  if(k === '3' || k.indexOf('判断') >= 0 || k.indexOf('是非') >= 0 || k.indexOf('对错') >= 0) return 3;
+  return null;
+}
+
+/* 去掉选项自带的「A.」「B、」前缀 —— 前端会自己渲染字母 */
+function xlCleanOpt(s){
+  return String(s == null ? '' : s)
+    .replace(/^\s*[A-Ha-h]\s*[.．、)）:：]\s*/, '')
+    .trim();
+}
+/* 去掉题干开头的「1.」题号 */
+function xlCleanStem(s){
+  const t = String(s == null ? '' : s).replace(/^\s*\d{1,4}\s*[.．、)）]\s*/, '').trim();
+  return t || String(s == null ? '' : s).trim();
+}
+
+/* 判断题：选项可能写成「正确/错误」「 对 / 错」「A. 正确」，统一成两选项 */
+function xlIsTrueFalse(opts){
+  if(opts.length !== 2) return false;
+  const pair = opts.map(function(o){ return o.replace(/\s/g,''); }).join('/');
+  return /^(正确|对|是|√|T|True)\/(错误|错|否|×|F|False)$/i.test(pair);
+}
+
+function xlNormAnswer(v, t, optCount){
+  const s = String(v == null ? '' : v).trim();
+  if(!s) return [];
+  if(t === 3){
+    const k = s.toLowerCase();
+    if(/^(对|正确|是|√|t|true|y|yes)$/.test(k)) return ['A'];
+    if(/^(错|错误|否|×|f|false|n|no)$/.test(k)) return ['B'];
+  }
+  const letters = s.toUpperCase().match(/[A-H]/g);
+  if(letters){
+    const uniq = [];
+    letters.forEach(function(c){ if(uniq.indexOf(c) < 0) uniq.push(c); });
+    uniq.sort();
+    return uniq.filter(function(c){ return (c.charCodeAt(0) - 65) < optCount; });
+  }
+  return [];
+}
+
+/* 二维数组 → 题库对象（交给 validateLib 做最终校验） */
+function rowsToLib(rows, fileName){
+  if(!rows || !rows.length) throw new Error('表格是空的');
+
+  // 在前 10 行里找最像表头的一行
+  let headerRow = 0, best = -1;
+  for(let i = 0; i < Math.min(10, rows.length); i++){
+    const row = rows[i] || [];
+    let score = 0;
+    row.forEach(function(cell){
+      const k = headerKey(cell);
+      if(!k) return;
+      const all = [].concat.apply([], Object.keys(XL_ALIASES).map(function(f){ return XL_ALIASES[f]; }));
+      if(all.some(function(a){ return a.toLowerCase() === k; })) score += 2;
+      else if(/^(?:选项|option)?([A-H]|[1-8])$/i.test(cleanHeader(cell))) score += 1;
+    });
+    if(score > best){ best = score; headerRow = i; }
+  }
+  if(best < 2) throw new Error('没认出表头，请确认表格里有「题目」「答案」这类列名');
+
+  const map = mapXlColumns(rows[headerRow]);
+  if(map.cols.q === undefined || map.cols.a === undefined){
+    throw new Error('表头里缺少「题目」或「正确答案」列');
+  }
+
+  const questions = [];
+  const errors = [];
+  let seq = 0;
+
+  for(let i = headerRow + 1; i < rows.length; i++){
+    const row = rows[i] || [];
+    const pick = function(field){ const idx = map.cols[field]; return idx === undefined ? '' : String(row[idx] == null ? '' : row[idx]); };
+    const stem = xlCleanStem(pick('q'));
+    if(!stem) continue;                       // 空行
+    seq++;
+
+    const t = xlNormType(pick('t'));
+    let opts = map.optIdx.map(function(idx){ return xlCleanOpt(row[idx]); }).filter(function(x){ return x; });
+
+    let type = t;
+    if(type === null){                        // 没写题型：按选项数猜
+      if(opts.length === 2) type = 3;
+      else type = xlNormAnswer(pick('a'), null, opts.length).length > 1 ? 2 : 1;
+    }
+    if(type === 3 && xlIsTrueFalse(opts)) opts = ['正确','错误'];
+    if(type === 3 && !opts.length) opts = ['正确','错误'];
+
+    if(!opts.length){
+      errors.push('第 ' + (i + 1) + ' 行：没有文字选项（多半是图片题）');
+      continue;
+    }
+
+    let ans = xlNormAnswer(pick('a'), type, opts.length);
+    if(!ans.length){
+      errors.push('第 ' + (i + 1) + ' 行：答案「' + pick('a').trim() + '」无法识别或超出选项范围');
+      continue;
+    }
+    if(type === 3 && opts.length === 2) ans = [ans[0]];
+
+    questions.push({
+      n: questions.length + 1,
+      t: type,
+      q: stem,
+      o: opts,
+      a: ans,
+      m: pick('m').trim(),
+      c: pick('c').trim() || '未分类'
+    });
+  }
+
+  if(!questions.length){
+    throw new Error('没解析出任何题目：' + (errors.slice(0, 3).join('；') || '请检查列名'));
+  }
+
+  const base = String(fileName || '导入题库').replace(/\.[^.]+$/, '');
+  return { lib: { name: base, source: fileName || '', questions: questions }, errors: errors };
+}
+
+/* ========================================================== */
 
 /* 出问题时给一页能看清的错误说明，而不是一句一闪而过的 toast */
 function errorPage(title, lines){
@@ -785,7 +1167,7 @@ async function loadLibData(id){
 }
 
 /* 导入一个新题库：作为一个独立库加进列表并切过去，不影响其它库 */
-async function applyLib(o){
+async function applyLib(o, opt){
   const res=validateLib(o);
   if(!res.ok){
     toast('导入失败，共 '+res.errs.length+' 处问题');
@@ -811,7 +1193,8 @@ async function applyLib(o){
   META.currentId=id;
   saveMeta();
   await loadLibData(id);
-  toast('已导入「'+res.lib.name+'」'+res.lib.questions.length+' 题');
+  toast('已导入「'+res.lib.name+'」'+res.lib.questions.length+' 题'
+    + ((opt && opt.suffix) ? opt.suffix : ''));
   home();
 }
 
