@@ -14,12 +14,20 @@
 html,body{margin:0;padding:0;height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-  background:#f1f5f9;color:#0f172a;font-size:16px;line-height:1.6;
+  /* 字号档位由 data-fs 控制，默认中号 */
+  --fs:16px; --fs-q:17px; --fs-o:15px;
+  background:#f1f5f9;color:#0f172a;font-size:var(--fs);line-height:1.6;
   overscroll-behavior-y:contain;
   /* 去掉快速连点触发的双击缩放；安卓上还能省掉 300ms 点击延迟 */
   touch-action:manipulation;
   -webkit-text-size-adjust:100%;
 }
+
+/* 字号档位：正文字号、题干字号、选项字号三者等比缩放 */
+body[data-fs="s"]{ --fs:15px; --fs-q:16px;   --fs-o:14px }
+body[data-fs="m"]{ --fs:16px; --fs-q:17px;   --fs-o:15px }
+body[data-fs="l"]{ --fs:17px; --fs-q:18.5px; --fs-o:16px }
+body[data-fs="xl"]{ --fs:19px; --fs-q:21px;  --fs-o:18px }
 .wrap{max-width:680px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
 .hd{
   position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #e2e8f0;
@@ -131,7 +139,7 @@ body{
 .pidx{color:#94a3b8;margin-left:auto}
 .qbar{height:3px;background:#eef2f7;border-radius:3px;overflow:hidden;margin:-2px 0 13px}
 .qbar>i{display:block;height:100%;min-width:2px;background:linear-gradient(90deg,#93c5fd,#2563eb);border-radius:3px;transition:width .25s}
-.qtext{font-size:17px;line-height:1.7;font-weight:500;margin:0 0 16px;white-space:pre-wrap;word-break:break-word}
+.qtext{font-size:var(--fs-q);line-height:1.7;font-weight:500;margin:0 0 16px;white-space:pre-wrap;word-break:break-word}
 .opt{
   display:flex;gap:11px;align-items:flex-start;background:#fff;border:1.5px solid #e2e8f0;
   border-radius:13px;padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:.15s;
@@ -141,7 +149,7 @@ body{
   flex:0 0 24px;height:24px;border-radius:7px;background:#f1f5f9;color:#64748b;
   font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;
 }
-.opt .v{flex:1;font-size:15px;line-height:1.55;word-break:break-word}
+.opt .v{flex:1;font-size:var(--fs-o);line-height:1.55;word-break:break-word}
 .opt.sel{border-color:#2563eb;background:#eff6ff}
 .opt.sel .k{background:#2563eb;color:#fff}
 .opt.right{border-color:#16a34a;background:#f0fdf4}
@@ -302,6 +310,77 @@ body{
 .clock.urgent{background:#fef2f2;color:#b91c1c;animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
 
+/* ---------- 背景主题 ----------
+   只换背景与文字色，主色（蓝）与对错语义色（绿/红）保持不变，
+   避免主题切换后「答对/答错」的视觉提示失真。 */
+body[data-theme="warm"]{background:#f6f1e7;color:#2e2619}
+body[data-theme="warm"] .hd,
+body[data-theme="warm"] .card,
+body[data-theme="warm"] .cat,
+body[data-theme="warm"] .act,
+body[data-theme="warm"] .mini,
+body[data-theme="warm"] .libcard,
+body[data-theme="warm"] .libbox,
+body[data-theme="warm"] .btn.s,
+body[data-theme="warm"] .searchbar input,
+body[data-theme="warm"] .sheet,
+body[data-theme="warm"] .opt,
+body[data-theme="warm"] .ft .in{background:#fffdf9;border-color:#e8dfd0}
+body[data-theme="warm"] .qtext,
+body[data-theme="warm"] .opt .v,
+body[data-theme="warm"] .act b,
+body[data-theme="warm"] .libname,
+body[data-theme="warm"] .mini .v,
+body[data-theme="warm"] h1{color:#2e2619}
+body[data-theme="warm"] .libmeta,
+body[data-theme="warm"] .act span,
+body[data-theme="warm"] .mini .l,
+body[data-theme="warm"] .hero .d,
+body[data-theme="warm"] .sec-t,
+body[data-theme="warm"] .pidx,
+body[data-theme="warm"] .fbtn{color:#8a7a62}
+
+body[data-theme="green"]{background:#e9f0e4;color:#20301c}
+body[data-theme="green"] .hd,
+body[data-theme="green"] .card,
+body[data-theme="green"] .cat,
+body[data-theme="green"] .act,
+body[data-theme="green"] .mini,
+body[data-theme="green"] .libcard,
+body[data-theme="green"] .libbox,
+body[data-theme="green"] .btn.s,
+body[data-theme="green"] .searchbar input,
+body[data-theme="green"] .sheet,
+body[data-theme="green"] .opt,
+body[data-theme="green"] .ft .in{background:#fbfdf8;border-color:#d5e2cd}
+body[data-theme="green"] .qtext,
+body[data-theme="green"] .opt .v,
+body[data-theme="green"] .act b,
+body[data-theme="green"] .libname,
+body[data-theme="green"] .mini .v,
+body[data-theme="green"] h1{color:#20301c}
+body[data-theme="green"] .libmeta,
+body[data-theme="green"] .act span,
+body[data-theme="green"] .mini .l,
+body[data-theme="green"] .hero .d,
+body[data-theme="green"] .sec-t,
+body[data-theme="green"] .pidx,
+body[data-theme="green"] .fbtn{color:#5f7358}
+
+/* 显示设置面板 */
+.disp-row{display:flex;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #f1f5f9}
+.disp-row:last-child{border-bottom:0}
+.disp-row .dl{font-size:14px;font-weight:600;width:44px;flex:0 0 auto}
+.disp-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1}
+.disp-opts.fs4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dopt{border:1px solid #e2e8f0;background:#fff;border-radius:10px;
+  padding:9px 4px;font-size:13px;font-family:inherit;color:#475569;cursor:pointer;min-height:44px}
+.dopt.on{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}
+.dpreview{margin-top:14px;padding:13px;border-radius:12px;background:#f8fafc;border:1px solid #eef2f7;
+  font-size:var(--fs-q);line-height:1.7;color:#0f172a}
+body[data-theme="warm"] .dpreview{background:#fdf9f1;border-color:#ece2d2}
+body[data-theme="green"] .dpreview{background:#f4f8f1;border-color:#dde8d6}
+
 /* 小屏：缩字号，分类改单列，避免挤成两行字 */
 @media (max-width:380px){
   .hero .t{font-size:21px}
@@ -328,6 +407,7 @@ body{
   <div class="hd">
     <button class="back" id="back" style="display:none">‹ 返回</button>
     <h1 id="title">刷题仔<span class="sub" id="sub"></span></h1>
+    <button class="back" id="dispBtn" onclick="dispMenu()" title="背景与字号">Aa</button>
     <button class="back" id="qbCard" style="display:none" onclick="openCard()">答题卡</button>
   </div>
   <div class="body" id="body"></div>
@@ -568,6 +648,7 @@ function home(){
   stopTick();
   setCardBtn('');
   backEl.style.display='none'; ft.style.display='none';
+  $('#dispBtn').style.display='';
 
   const has = hasLib();
   const total = has ? LIB.questions.length : 0;
@@ -641,6 +722,48 @@ function home(){
 }
 
 function needLib(){ toast('先导入一份题库'); }
+
+/* ---------- 显示设置：背景主题 + 字号 ---------- */
+let DISP = { theme:'default', fs:'m' };
+const THEMES = [{k:'default',n:'默认'},{k:'warm',n:'暖白'},{k:'green',n:'护眼绿'}];
+const FSS = [{k:'s',n:'小'},{k:'m',n:'中'},{k:'l',n:'大'},{k:'xl',n:'特大'}];
+
+/* 主题挂在 body 的 data 属性上，CSS 选择器负责换色；
+   默认主题不加属性，避免多一条覆盖规则 */
+function applyDisp(){
+  document.body.dataset.theme = (DISP.theme && DISP.theme !== 'default') ? DISP.theme : '';
+  document.body.dataset.fs = DISP.fs || 'm';
+}
+function saveDisp(){ put('display', DISP); }
+
+function dispMenu(){
+  titleEl.innerHTML='显示设置<span class="sub">背景与字号</span>';
+  backEl.style.display=''; backEl.onclick=home; ft.style.display='none';
+  setCardBtn('');
+  $('#dispBtn').style.display='none';
+
+  const th = THEMES.map(function(t){
+    return '<button class="dopt'+(DISP.theme===t.k?' on':'')+'" onclick="setDisp(\'theme\',\''+t.k+'\')">'+t.n+'</button>';
+  }).join('');
+  const fs = FSS.map(function(f){
+    return '<button class="dopt'+(DISP.fs===f.k?' on':'')+'" onclick="setDisp(\'fs\',\''+f.k+'\')">'+f.n+'</button>';
+  }).join('');
+
+  body.innerHTML='<div class="card">'
+    + '<div class="disp-row"><span class="dl">背景</span><div class="disp-opts">'+th+'</div></div>'
+    + '<div class="disp-row"><span class="dl">字号</span><div class="disp-opts fs4">'+fs+'</div></div>'
+    + '<div class="dpreview">电流互感器的变比为 K，其二次阻抗折合到一次侧后，应乘（　）倍。'
+    + '<div style="color:#64748b;font-size:12.5px;margin-top:8px">—— 题干与选项的实际显示效果</div></div>'
+    + '</div>'
+    + '<div style="text-align:center;font-size:12.5px;color:#94a3b8;margin-top:6px">设置会自动保存，下次打开仍然生效</div>';
+}
+
+function setDisp(k, v){
+  DISP[k] = v;
+  applyDisp();
+  saveDisp();
+  dispMenu();
+}
 
 /* ---------- 首页搜索 ----------
    只更新 #sres 并隐藏 #hmain，不重绘整个 body，
@@ -1360,6 +1483,7 @@ function startRecite(){
   recite();
 }
 function recite(){
+  $('#dispBtn').style.display='none';
   const no=RQ[RI], q=byNo(no);
   if(!q){ home(); return; }
   setCardBtn('recite');
@@ -1536,6 +1660,7 @@ let autoTimer=null;
 function clearAuto(){ if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; } }
 
 function quiz(){
+  $('#dispBtn').style.display='none';   // 答题页头部要留给答题卡
   const no=S.queue[S.qidx];
   const q=byNo(no);
   if(!q){ toast('题目已不在题库中'); home(); return; }
@@ -1929,6 +2054,7 @@ function updateClock(){
 
 function exam(){
   clearAuto();
+  $('#dispBtn').style.display='none';
   if(!EX || !EX.items || !EX.items.length){ return examBroken(); }
   const it=EX.items[EX.idx];
   if(!it){ return examBroken(); }
@@ -2235,6 +2361,13 @@ async function boot(){
   const es=await Store.get('exset');
   EXSET=Object.assign(EMPTY_EXSET(), es || {});
   EX=await Store.get('exam');
+
+  // 显示设置要在首次渲染前应用，否则会先闪一下默认主题
+  const dp=await Store.get('display');
+  if(dp && typeof dp==='object'){
+    DISP={ theme:dp.theme||'default', fs:dp.fs||'m' };
+  }
+  applyDisp();
 
   if(META.currentId && META.libs.some(function(l){ return l.id===META.currentId; })){
     await loadLibData(META.currentId);
