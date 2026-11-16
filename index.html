@@ -113,6 +113,20 @@ body[data-theme="green"] .act.hot b{color:#4a7a3a}
   font-size:12px;color:#94a3b8;letter-spacing:.2px}
 body[data-theme="dark"] .srsline{border-top-color:#2a3750;color:#6b7d96}
 
+/* 近 7 天正确率曲线 */
+.chart{display:flex;align-items:flex-end;gap:6px;height:104px;padding-top:4px}
+.dcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}
+.dval{font-size:10px;color:#94a3b8;height:12px;line-height:12px;font-variant-numeric:tabular-nums}
+.dbar{width:100%;max-width:24px;border-radius:5px 5px 3px 3px;transition:height .3s}
+.dbar.good{background:#22c55e}
+.dbar.mid{background:#f59e0b}
+.dbar.bad{background:#ef4444}
+.dbar.nil{background:#e2e8f0}
+.dday{font-size:10px;color:#94a3b8;white-space:nowrap}
+body[data-theme="dark"] .dbar.nil{background:#2a3750}
+body[data-theme="dark"] .dval,
+body[data-theme="dark"] .dday{color:#6b7d96}
+
 /* 搜索结果分类筛选 */
 .chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -550,7 +564,7 @@ body[data-theme="green"] .dpreview{background:#f4f8f1;border-color:#dde8d6}
    也不会因为写盘慢卡住界面。 */
 const DB_NAME='wenzai', DB_VER=1, DB_STORE='kv';
 const LS_PREFIX='wz:';
-const EMPTY_S=()=>({answers:{},wrong:[],fav:[],notes:{},srs:{},wrongCount:{},pos:0,queue:[],qidx:0,done:0,right:0});
+const EMPTY_S=()=>({answers:{},wrong:[],fav:[],notes:{},srs:{},wrongCount:{},daily:{},pos:0,queue:[],qidx:0,done:0,right:0});
 const EMPTY_EXSET=()=>({s:60,m:40,j:60,shuffle:false,showAns:true,timed:false,mins:60});
 
 let storeWarned=false;
@@ -1497,6 +1511,7 @@ async function loadLibData(id){
   if(!S.notes || typeof S.notes!=='object') S.notes={};
   if(!S.srs || typeof S.srs!=='object') S.srs={};
   if(!S.wrongCount || typeof S.wrongCount!=='object') S.wrongCount={};
+  if(!S.daily || typeof S.daily!=='object') S.daily={};
   if(!Array.isArray(S.wrong)) S.wrong=[];
   if(!Array.isArray(S.fav)) S.fav=[];
   if(!Array.isArray(S.queue)) S.queue=[];
@@ -2105,6 +2120,15 @@ function submit(){
     const i=S.wrong.indexOf(no); if(i>=0) S.wrong.splice(i,1);
   }
   srsUpdate(no, ok);
+
+  /* 按天累计，供统计页画近 7 天曲线 */
+  const dk = todayKey();
+  if(!S.daily || typeof S.daily!=='object') S.daily={};
+  const dv = S.daily[dk] || { n:0, r:0 };
+  dv.n++;
+  if(ok) dv.r++;
+  S.daily[dk] = dv;
+
   save();
   quiz();                                  // 先渲染反馈（答对也要看解析）
   const isLast = S.qidx>=S.queue.length-1;
@@ -2273,6 +2297,49 @@ function redoLog(i){
 }
 
 /* ---------- 统计 ---------- */
+/* 今天的日期键，按本地时区算，不用 UTC（否则晚上 8 点后会被算成明天） */
+function todayKey(){
+  const d=new Date(), p=n=>(n<10?'0':'')+n;
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+
+/* 近 7 天正确率柱状图（纯 div，不引图表库） */
+function dailyChart(){
+  const p2=n=>(n<10?'0':'')+n;
+  const days=[];
+  const base=new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(base.getFullYear(), base.getMonth(), base.getDate()-i);
+    const key=d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+    const rec=(S.daily && S.daily[key]) || null;
+    days.push({
+      label:(d.getMonth()+1)+'/'+d.getDate(),
+      n: rec ? rec.n : 0,
+      p: (rec && rec.n) ? Math.round(rec.r/rec.n*100) : null
+    });
+  }
+  const totalN=days.reduce(function(a,x){ return a+x.n; },0);
+  const activeDays=days.filter(function(x){ return x.n>0; }).length;
+
+  const bars=days.map(function(x){
+    const h = x.p===null ? 3 : Math.max(7, Math.round(x.p*0.6));
+    const cls = x.p===null ? 'nil' : (x.p>=80?'good':(x.p>=60?'mid':'bad'));
+    return '<div class="dcol">'
+      + '<div class="dval">'+(x.p===null?'':x.p)+'</div>'
+      + '<div class="dbar '+cls+'" style="height:'+h+'px"></div>'
+      + '<div class="dday">'+x.label+'</div>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="stat-card">'
+    + '<div style="font-weight:600;margin-bottom:3px">近 7 天正确率</div>'
+    + '<div style="font-size:12px;color:#94a3b8;margin-bottom:14px">'
+    + (totalN ? '答题 '+totalN+' 次 · 活跃 '+activeDays+' 天' : '这几天还没有作答记录')
+    + '</div>'
+    + '<div class="chart">'+bars+'</div>'
+    + '</div>';
+}
+
 function stats(){
   if(!hasLib()){ return home(); }
   const total=LIB.questions.length, answered=Object.keys(S.answers).length;
@@ -2300,6 +2367,7 @@ function stats(){
     + '<div class="bar"><i style="width:'+pct(answered,total)+'%"></i></div>'
     + '<div style="font-size:12px;color:#94a3b8;margin-top:8px">题库完成度 '+pct(answered,total)+'%</div>'
     + '</div>'
+    + dailyChart()
     + (rows?'<div class="stat-card"><div style="font-weight:600;margin-bottom:14px">分类进度</div>'+rows+'</div>':'')
     + '<button class="btn s" onclick="resetAll()" style="color:#dc2626">清空全部记录</button>';
 }
