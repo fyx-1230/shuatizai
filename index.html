@@ -91,6 +91,14 @@ body[data-fs="xl"]{ --fs:19px; --fs-q:21px;  --fs-o:18px }
 .act b{display:block;font-size:14px;font-weight:600;color:#0f172a}
 .act span{display:block;font-size:11.5px;color:#94a3b8;margin-top:3px}
 .act.dis{opacity:.42;cursor:not-allowed}
+.act.hot{border-color:#2563eb;background:#eff6ff}
+.act.hot b{color:#2563eb}
+body[data-theme="dark"] .act.hot{background:#1b2c47;border-color:#5b9cf8}
+body[data-theme="dark"] .act.hot b{color:#7db3fb}
+body[data-theme="warm"] .act.hot{background:#fdf6e8;border-color:#dcbe8a}
+body[data-theme="warm"] .act.hot b{color:#9a6b1f}
+body[data-theme="green"] .act.hot{background:#f2f8ec;border-color:#a9c79b}
+body[data-theme="green"] .act.hot b{color:#4a7a3a}
 .hintline{font-size:12.5px;color:#94a3b8;text-align:center;padding:20px 12px;background:#fff;
   border:1px dashed #e2e8f0;border-radius:13px;margin-bottom:14px;line-height:1.7}
 .noteinput{width:100%;min-height:130px;border:1px solid #e2e8f0;border-radius:12px;padding:12px;
@@ -526,7 +534,7 @@ body[data-theme="green"] .dpreview{background:#f4f8f1;border-color:#dde8d6}
    也不会因为写盘慢卡住界面。 */
 const DB_NAME='wenzai', DB_VER=1, DB_STORE='kv';
 const LS_PREFIX='wz:';
-const EMPTY_S=()=>({answers:{},wrong:[],fav:[],notes:{},pos:0,queue:[],qidx:0,done:0,right:0});
+const EMPTY_S=()=>({answers:{},wrong:[],fav:[],notes:{},srs:{},pos:0,queue:[],qidx:0,done:0,right:0});
 const EMPTY_EXSET=()=>({s:60,m:40,j:60,shuffle:false,showAns:true,timed:false,mins:60});
 
 let storeWarned=false;
@@ -753,6 +761,8 @@ function home(){
   const answered = has ? Object.keys(S.answers).length : 0;
   const acc = pct(S.right, S.done);
   const canResume = has && S.queue && S.queue.length && S.qidx>0 && S.qidx<S.queue.length;
+  const dueN = has ? srsDue().length : 0;
+  const wrongN = has ? S.wrong.length : 0;
 
   titleEl.innerHTML = '刷题仔<span class="sub">'+(has ? total+' 题' : '未导入题库')+'</span>';
 
@@ -799,9 +809,17 @@ function home(){
     : (LOG.length ? ' onclick="go(\'exlog\')"' : ' onclick="toast(\'还没有考试记录\')"');
 
   const acts = '<div class="acts">'
+    + '<div class="act'+(has&&dueN?' hot':' dis')+'"'
+    +   (has&&dueN ? ' onclick="startBatch(srsDue(),\'今日复习\')"'
+                   : ' onclick="'+(has?'toast(\'今天没有到期要复习的题\')':'needLib()')+'"')+'>'
+    +   '<b>今日复习</b><span>'+(dueN ? dueN+' 题到期' : '暂无到期')+'</span></div>'
     + '<div class="act'+dis+'"'+on('startRandom()')+'><b>随机练习</b><span>打乱顺序</span></div>'
     + '<div class="act'+dis+'"'+on('startRecite()')+'><b>'+(RIPOS>0?'继续背题':'背题模式')+'</b><span>'+(RIPOS>0?'上次到第 '+(RIPOS+1)+' 题':'看答案与解析')+'</span></div>'
     + '<div class="act'+dis+'"'+on('examSetup()')+'><b>模拟考试</b><span>自选题量</span></div>'
+    + '<div class="act'+(has&&wrongN?'':' dis')+'"'
+    +   (has&&wrongN ? ' onclick="startBatch(S.wrong,\'错题重练\')"'
+                     : ' onclick="'+(has?'toast(\'错题本是空的\')':'needLib()')+'"')+'>'
+    +   '<b>错题重练</b><span>'+(wrongN ? wrongN+' 题' : '暂无错题')+'</span></div>'
     + '<div class="act'+(has&&LOG.length?'':' dis')+'"'+logOn+'><b>考试记录</b><span>'+(LOG.length?LOG.length+' 次':'暂无')+'</span></div>'
     + '</div>';
 
@@ -1431,6 +1449,7 @@ async function loadLibData(id){
   // 存档健壮性：旧版本可能缺字段或类型不对
   if(!S.answers || typeof S.answers!=='object') S.answers={};
   if(!S.notes || typeof S.notes!=='object') S.notes={};
+  if(!S.srs || typeof S.srs!=='object') S.srs={};
   if(!Array.isArray(S.wrong)) S.wrong=[];
   if(!Array.isArray(S.fav)) S.fav=[];
   if(!Array.isArray(S.queue)) S.queue=[];
@@ -1909,6 +1928,50 @@ function quiz2Refresh(){
   });
 }
 
+/* ---------- 间隔重复（简化版艾宾浩斯） ----------
+   题目难度固定，没必要上 SM-2 的难度因子；用固定间隔表已经够用：
+   答对升一级、下次间隔按表递增；答错退回第 1 级，10 分钟后再出现。 */
+const SRS_DAYS = [0, 1, 2, 4, 7, 15, 30, 60];
+
+function srsUpdate(no, ok){
+  if(!S.srs || typeof S.srs !== 'object') S.srs = {};
+  const r = S.srs[no] || { lv:0, due:0 };
+  if(ok){
+    r.lv = Math.min(SRS_DAYS.length - 1, (r.lv || 0) + 1);
+    r.due = Date.now() + SRS_DAYS[r.lv] * 86400000;
+  }else{
+    r.lv = 0;
+    r.due = Date.now() + 10 * 60000;
+  }
+  S.srs[no] = r;
+}
+
+/* 到期待复习的题号，按到期时间从早到晚 */
+function srsDue(){
+  if(!LIB || !S.srs) return [];
+  const now = Date.now();
+  const out = [];
+  const qs = LIB.questions;
+  for(let i = 0; i < qs.length; i++){
+    const r = S.srs[qs[i].n];
+    if(r && r.due && r.due <= now) out.push(qs[i].n);
+  }
+  out.sort(function(a,b){ return (S.srs[a].due || 0) - (S.srs[b].due || 0); });
+  return out;
+}
+
+/* 从任意题号集合起一组练习 */
+function startBatch(arr, label){
+  if(!arr || !arr.length){ toast('这里还没有题目'); return; }
+  clearAuto();
+  S.queue = arr.slice();
+  S.qidx = 0;
+  save();
+  quiz();
+  window.scrollTo(0,0);
+  toast(label + ' · ' + arr.length + ' 题');
+}
+
 function submit(){
   const no=S.queue[S.qidx], q=byNo(no);
   if(!q){ home(); return; }
@@ -1921,6 +1984,7 @@ function submit(){
   }else{
     const i=S.wrong.indexOf(no); if(i>=0) S.wrong.splice(i,1);
   }
+  srsUpdate(no, ok);
   save();
   quiz();                                  // 先渲染反馈（答对也要看解析）
   const isLast = S.qidx>=S.queue.length-1;
